@@ -15,10 +15,6 @@ int buscarEntradaDiretorio(particao *p, int inode_dir, const char *nome) {
 
     entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
-
-    printf("Debug: Tamanho do bloco: %d, Tamanho entrada: %lu, Max entradas: %d\n", 
-           p->tamanhoBloco, sizeof(entrada_diretorio), max_entradas);
-
     for (int i = 0; i < max_entradas; i++) {
         if (entradas[i].valida && strcmp(entradas[i].nome, nome) == 0) {
             return entradas[i].numero_inode;
@@ -38,8 +34,6 @@ int adicionarEntradaDiretorio(particao *p, int inode_dir, const char *nome, int 
     entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
 
-    printf("Debug: Adicionando entrada '%s' - Max entradas: %d\n", nome, max_entradas);
-
     // Procurar slot livre
     for (int i = 0; i < max_entradas; i++) {
         if (!entradas[i].valida) {
@@ -50,8 +44,6 @@ int adicionarEntradaDiretorio(particao *p, int inode_dir, const char *nome, int 
             // Atualizar tamanho do diretório
             p->inodes[inode_dir].tamanho += sizeof(entrada_diretorio);
             p->inodes[inode_dir].data_modificacao = time(NULL);
-            
-            printf("Debug: Entrada '%s' adicionada na posição %d\n", nome, i);
             return 0;
         }
     }

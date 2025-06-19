@@ -1006,6 +1006,7 @@ void menuPrincipal() {
             printf("2. 📁 Operações com diretórios\n");
             printf("3. 📄 Operações com arquivos\n");
             printf("4. ⚙️  Configurações e informações\n");
+            printf("5. 🤖 Execução automática de comandos\n");
             printf("9. ❓ Sobre o simulador\n");
             printf("0. 🚪 Sair\n");
         }
@@ -1053,6 +1054,14 @@ void menuPrincipal() {
             case 4:
                 if (sistema_inicializado) {
                     menuConfiguracoes();
+                } else {
+                    printf("❌ Sistema não inicializado!\n");
+                    pausar();
+                }
+                break;
+            case 5:
+                if (sistema_inicializado) {
+                    menuExecucaoAutomatica();
                 } else {
                     printf("❌ Sistema não inicializado!\n");
                     pausar();

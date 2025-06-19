@@ -9,6 +9,7 @@
 #include "particao.h"
 #include "diretorio.h"
 #include "arquivo.h"
+#include "modoAutomatico.h"
 
 // Constantes para caminho
 #define MAX_CAMINHO_DEPTH 50
@@ -34,6 +35,7 @@ extern char caminho_string[MAX_CAMINHO_STR];
 // Utilitários
 void limparBuffer(void);
 void pausar(void);
+void construirCaminhoString();
 
 // Caminho e navegação
 void exibirCaminhoAtual(void);

@@ -68,7 +68,6 @@ int inicializarParticao(particao *p, int tamanho, int tamanhoBloco) {
     p->numBlocos = tamanho / tamanhoBloco;
     p->numInodes = p->numBlocos / 4; // Proporção de 1 i-node para cada 4 blocos
 
-    printf("Debug: Inicializando com:\n");
     printf("  Tamanho entrada_diretorio: %lu bytes\n", sizeof(entrada_diretorio));
     printf("  Entradas por bloco: %d\n", tamanhoBloco / (int)sizeof(entrada_diretorio));
 

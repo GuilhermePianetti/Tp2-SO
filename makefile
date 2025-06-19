@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -Wall -g
 
 # Arquivos-fonte e cabeçalhos
-SRCS = main.c menu.c diretorio.c arquivo.c particao.c
+SRCS = main.c menu.c diretorio.c arquivo.c particao.c modoAutomatico.c
 OBJS = $(SRCS:.c=.o)
 
 # Nome do executável
