@@ -49,6 +49,7 @@ void liberarParticao(particao *p);
 // Funções de alocação
 int encontrarInodeLivre(particao *p);
 int encontrarBlocoLivre(particao *p);
+int encontrarOuAlocarBloco(particao *p, int inode_num, int tipo_conteudo);
 
 // Utilitários e visualização
 void listarDiretorio(particao *p, int inode_dir);

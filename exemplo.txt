@@ -1,0 +1,324 @@
+# ========================================
+# ARQUIVO DE EXEMPLO - EXECUÇÃO AUTOMÁTICA
+# Sistema de Arquivos Simulado
+# ========================================
+
+# Este arquivo demonstra todos os comandos disponíveis
+# para execução automática no simulador de sistema de arquivos
+
+echo ========================================
+echo 🚀 INICIANDO DEMONSTRAÇÃO COMPLETA
+echo ========================================
+
+# Mostrar informações iniciais do sistema
+info
+pausar
+
+echo ========================================
+echo 📁 CRIAÇÃO DE ESTRUTURA DE DIRETÓRIOS
+echo ========================================
+
+# Criar diretórios principais
+criar_dir home
+criar_dir documentos
+criar_dir projetos
+criar_dir backup
+criar_dir temp
+
+# Listar conteúdo da raiz
+echo Conteúdo da raiz após criação dos diretórios:
+listar
+pausar
+
+echo ========================================
+echo 🏠 CONFIGURANDO DIRETÓRIO HOME
+echo ========================================
+
+# Entrar no diretório home
+navegar home
+
+# Criar subdiretórios do usuário
+criar_dir desktop
+criar_dir downloads
+criar_dir música
+criar_dir vídeos
+criar_dir fotos
+
+# Criar alguns arquivos pessoais
+criar_arquivo perfil.txt
+criar_arquivo configuracoes.conf
+criar_arquivo historico.log
+
+echo Estrutura do diretório home:
+listar
+pausar
+
+echo ========================================
+echo 📄 GERENCIANDO DOCUMENTOS
+echo ========================================
+
+# Navegar para documentos
+navegar /documentos
+
+# Criar diferentes tipos de documentos
+criar_arquivo relatorio_anual.doc
+criar_arquivo apresentacao.ppt
+criar_arquivo planilha_orcamento.xls
+criar_arquivo manual_usuario.pdf
+criar_arquivo notas_reuniao.txt
+
+# Criar subdiretório para arquivos importantes
+criar_dir importantes
+navegar importantes
+
+criar_arquivo contrato_trabalho.pdf
+criar_arquivo certificados.zip
+criar_arquivo backup_senhas.encrypted
+
+echo Documentos importantes criados:
+listar
+
+# Voltar para documentos
+navegar ..
+echo Todos os documentos:
+listar
+pausar
+
+echo ========================================
+echo 💼 ÁREA DE PROJETOS
+echo ========================================
+
+navegar /projetos
+
+# Criar projeto de software
+criar_dir projeto_website
+navegar projeto_website
+
+criar_arquivo index.html
+criar_arquivo style.css
+criar_arquivo script.js
+criar_arquivo README.md
+
+criar_dir images
+criar_dir assets
+criar_dir src
+
+navegar src
+criar_arquivo main.c
+criar_arquivo utils.h
+criar_arquivo config.ini
+
+navegar ..
+echo Estrutura do projeto website:
+listar
+pausar
+
+# Criar outro projeto
+navegar /projetos
+criar_dir app_mobile
+navegar app_mobile
+
+criar_arquivo MainActivity.java
+criar_arquivo activity_main.xml
+criar_arquivo strings.xml
+criar_arquivo build.gradle
+
+echo Projeto mobile criado:
+listar
+pausar
+
+echo ========================================
+echo 🔄 OPERAÇÕES DE ARQUIVO AVANÇADAS
+echo ========================================
+
+# Demonstrar renomeação
+navegar /documentos
+echo Renomeando arquivo...
+renomear relatorio_anual.doc relatorio_2024.doc
+
+# Demonstrar movimentação de arquivos
+echo Movendo arquivo para subdiretório...
+mover manual_usuario.pdf importantes/
+
+# Criar arquivo temporário para demonstrar exclusão
+criar_arquivo arquivo_temp.tmp
+echo Arquivo temporário criado
+listar
+
+echo Removendo arquivo temporário...
+apagar arquivo_temp.tmp
+
+echo Estado final dos documentos:
+listar
+pausar
+
+echo ========================================
+echo 🗂️ ORGANIZANDO ARQUIVOS POR CATEGORIA
+echo ========================================
+
+navegar /home/fotos
+
+# Simular organização de fotos
+criar_arquivo foto001.jpg
+criar_arquivo foto002.jpg
+criar_arquivo foto003.jpg
+criar_arquivo screenshot.png
+
+criar_dir eventos
+criar_dir paisagens
+criar_dir família
+
+# Mover fotos para categorias (simulação)
+mover foto001.jpg eventos/
+mover foto002.jpg paisagens/
+
+echo Fotos organizadas:
+listar
+echo Fotos de eventos:
+navegar eventos
+listar
+navegar ..
+pausar
+
+echo ========================================
+echo 🎵 BIBLIOTECA MULTIMÍDIA
+echo ========================================
+
+navegar /home/música
+
+# Criar estrutura de música
+criar_dir rock
+criar_dir jazz
+criar_dir clássica
+criar_dir brasileira
+
+navegar rock
+criar_arquivo album1_track01.mp3
+criar_arquivo album1_track02.mp3
+criar_arquivo album2_track01.mp3
+
+navegar ../jazz
+criar_arquivo smooth_jazz_collection.mp3
+criar_arquivo classic_standards.mp3
+
+navegar ../brasileira
+criar_arquivo bossa_nova_essentials.mp3
+criar_arquivo mpb_clássicos.mp3
+
+navegar ..
+echo Biblioteca musical organizada:
+listar
+pausar
+
+echo ========================================
+echo 💾 SISTEMA DE BACKUP
+echo ========================================
+
+navegar /backup
+
+# Simular backups organizados por data
+criar_dir backup_2024_01
+criar_dir backup_2024_02
+criar_dir backup_2024_03
+
+navegar backup_2024_03
+criar_arquivo sistema_completo.tar.gz
+criar_arquivo documentos_importantes.zip
+criar_arquivo configuracoes_usuario.backup
+criar_arquivo banco_dados.sql
+
+echo Backup mais recente:
+listar
+pausar
+
+echo ========================================
+# Simular importação de arquivo (comentado pois precisa de arquivo real)
+# echo 📥 IMPORTAÇÃO DE ARQUIVOS EXTERNOS
+# echo ========================================
+# 
+# navegar /temp
+# echo Importando arquivo de configuração...
+# # importar config_sistema.txt /caminho/real/para/arquivo.txt
+# echo (Comando de importação comentado - requer arquivo real)
+
+echo ========================================
+echo 🧹 LIMPEZA DO SISTEMA
+echo ========================================
+
+navegar /temp
+
+# Criar arquivos temporários para demonstrar limpeza
+criar_arquivo cache_01.tmp
+criar_arquivo cache_02.tmp
+criar_arquivo temp_download.part
+criar_arquivo log_temporario.log
+
+echo Arquivos temporários criados:
+listar
+
+echo Limpando arquivos temporários...
+apagar cache_01.tmp
+apagar cache_02.tmp
+apagar temp_download.part
+apagar log_temporario.log
+
+echo Diretório temp após limpeza:
+listar
+pausar
+
+echo ========================================
+echo 📊 RELATÓRIO FINAL DO SISTEMA
+echo ========================================
+
+# Navegar para raiz e mostrar estrutura completa
+navegar /
+
+echo Estrutura final do sistema:
+listar
+
+echo
+echo Explorando cada diretório principal:
+echo
+
+echo === HOME ===
+navegar home
+listar
+
+echo
+echo === DOCUMENTOS ===
+navegar /documentos
+listar
+
+echo
+echo === PROJETOS ===
+navegar /projetos
+listar
+
+echo
+echo === BACKUP ===
+navegar /backup
+listar
+
+# Mostrar estatísticas finais
+navegar /
+echo
+echo Estatísticas finais do sistema:
+info
+
+echo ========================================
+echo ✅ DEMONSTRAÇÃO CONCLUÍDA COM SUCESSO!
+echo ========================================
+
+echo
+echo 📋 RESUMO DAS OPERAÇÕES REALIZADAS:
+echo • Criados múltiplos diretórios organizados
+echo • Gerados diversos arquivos de exemplo
+echo • Demonstradas operações de renomeação
+echo • Realizadas movimentações de arquivos
+echo • Executadas operações de limpeza
+echo • Organizada estrutura hierárquica completa
+echo
+echo 💡 Este exemplo demonstra todas as funcionalidades
+echo    disponíveis no sistema de execução automática!
+echo
+echo Obrigado por usar o simulador de sistema de arquivos! 🎉

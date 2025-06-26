@@ -8,16 +8,25 @@ int buscarEntradaDiretorio(particao *p, int inode_dir, const char *nome) {
         return -1; // Não é um diretório
     }
 
-    int bloco = p->inodes[inode_dir].blocos_diretos[0];
-    if (bloco == -1) {
-        return -1; // Diretório vazio
-    }
-
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida && strcmp(entradas[i].nome, nome) == 0) {
-            return entradas[i].numero_inode;
+    
+    // Percorrer todos os blocos diretos do diretório
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco = p->inodes[inode_dir].blocos_diretos[b];
+        
+        // Se o bloco não está alocado, pular para o próximo
+        if (bloco == -1) {
+            continue;
+        }
+
+        // Buscar no bloco atual
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas[i].valida && strcmp(entradas[i].nome, nome) == 0) {
+                // Atualizar data de acesso do diretório
+                p->inodes[inode_dir].data_acesso = time(NULL);
+                return entradas[i].numero_inode;
+            }
         }
     }
 
@@ -30,25 +39,32 @@ int adicionarEntradaDiretorio(particao *p, int inode_dir, const char *nome, int 
         return -1; // Não é um diretório
     }
 
-    int bloco = p->inodes[inode_dir].blocos_diretos[0];
+    // Encontrar bloco com espaço livre ou alocar novo
+    int bloco = encontrarOuAlocarBloco(p, inode_dir, 1);
+    
+    if (bloco == -1) {
+        printf("Erro: Não foi possível alocar bloco para o diretório.\n");
+        return -1;
+    }
+
+    // Adicionar entrada no bloco encontrado
     entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
 
-    // Procurar slot livre
     for (int i = 0; i < max_entradas; i++) {
         if (!entradas[i].valida) {
             strcpy(entradas[i].nome, nome);
             entradas[i].numero_inode = inode_arquivo;
             entradas[i].valida = 1;
             
-            // Atualizar tamanho do diretório
+            // Atualizar metadados do diretório
             p->inodes[inode_dir].tamanho += sizeof(entrada_diretorio);
             p->inodes[inode_dir].data_modificacao = time(NULL);
             return 0;
         }
     }
 
-    printf("Erro: Diretório cheio (máximo %d entradas por bloco).\n", max_entradas);
+    printf("Erro: Bloco retornado não tem espaço livre (erro interno).\n");
     return -1;
 }
 
@@ -132,21 +148,33 @@ int renomearEntrada(particao *p, int inode_dir, const char *nome_antigo, const c
         return -1;
     }
 
-    int bloco = p->inodes[inode_dir].blocos_diretos[0];
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
-    int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    // Verificar se já existe o nome novo antes de procurar o antigo
+    if (buscarEntradaDiretorio(p, inode_dir, nome_novo) != -1) {
+        printf("Erro: Já existe uma entrada com o novo nome '%s'.\n", nome_novo);
+        return -1;
+    }
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida && strcmp(entradas[i].nome, nome_antigo) == 0) {
-            // Verificar se já existe o nome novo
-            if (buscarEntradaDiretorio(p, inode_dir, nome_novo) != -1) {
-                printf("Erro: Já existe uma entrada com o novo nome '%s'.\n", nome_novo);
-                return -1;
+    int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    
+    // Percorrer todos os blocos diretos do diretório
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco = p->inodes[inode_dir].blocos_diretos[b];
+        
+        // Se o bloco não está alocado, pular para o próximo
+        if (bloco == -1) {
+            continue;
+        }
+
+        // Buscar entrada com nome antigo no bloco atual
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas[i].valida && strcmp(entradas[i].nome, nome_antigo) == 0) {
+                // Renomear a entrada
+                strcpy(entradas[i].nome, nome_novo);
+                p->inodes[inode_dir].data_modificacao = time(NULL);
+                printf("Entrada '%s' renomeada para '%s'.\n", nome_antigo, nome_novo);
+                return 0;
             }
-            strcpy(entradas[i].nome, nome_novo);
-            p->inodes[inode_dir].data_modificacao = time(NULL);
-            printf("Entrada '%s' renomeada para '%s'.\n", nome_antigo, nome_novo);
-            return 0;
         }
     }
 
@@ -162,34 +190,62 @@ int apagarDiretorio(particao *p, int inode_dir_pai, const char *nome) {
         return -1;
     }
 
-    int bloco_alvo = p->inodes[inode_alvo].blocos_diretos[0];
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco_alvo];
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
 
-    // Verificar se o diretório está vazio
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida) {
-            printf("Erro: Diretório '%s' não está vazio.\n", nome);
-            return -1;
+    // Verificar se o diretório está vazio (percorrer todos os blocos)
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco_alvo = p->inodes[inode_alvo].blocos_diretos[b];
+        
+        // Se o bloco não está alocado, pular para o próximo
+        if (bloco_alvo == -1) {
+            continue;
+        }
+
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco_alvo];
+        
+        // Verificar se há entradas válidas no bloco
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas[i].valida) {
+                printf("Erro: Diretório '%s' não está vazio.\n", nome);
+                return -1;
+            }
         }
     }
 
-    // Marcar i-node e bloco como livres
+    // Liberar todos os blocos alocados do diretório alvo
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco_alvo = p->inodes[inode_alvo].blocos_diretos[b];
+        
+        if (bloco_alvo != -1) {
+            p->bitmap[bloco_alvo] = 0; // Marcar bloco como livre
+            p->inodes[inode_alvo].blocos_diretos[b] = 0; // Limpar referência
+        }
+    }
+
+    // Marcar i-node como livre
     p->bitmapInodes[inode_alvo] = 0;
-    p->bitmap[bloco_alvo] = 0;
     p->inodes[inode_alvo].tipo = -1;
 
-    // Remover entrada do diretório pai
-    int bloco_pai = p->inodes[inode_dir_pai].blocos_diretos[0];
-    entrada_diretorio *entradas_pai = (entrada_diretorio *)p->blocos[bloco_pai];
+    // Remover entrada do diretório pai (percorrer todos os blocos do pai)
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco_pai = p->inodes[inode_dir_pai].blocos_diretos[b];
+        
+        // Se o bloco não está alocado, pular para o próximo
+        if (bloco_pai == 0) {
+            continue;
+        }
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas_pai[i].valida && strcmp(entradas_pai[i].nome, nome) == 0) {
-            entradas_pai[i].valida = 0;
-            p->inodes[inode_dir_pai].tamanho -= sizeof(entrada_diretorio);
-            p->inodes[inode_dir_pai].data_modificacao = time(NULL);
-            printf("Diretório '%s' removido com sucesso.\n", nome);
-            return 0;
+        entrada_diretorio *entradas_pai = (entrada_diretorio *)p->blocos[bloco_pai];
+        
+        // Procurar entrada a ser removida
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas_pai[i].valida && strcmp(entradas_pai[i].nome, nome) == 0) {
+                entradas_pai[i].valida = 0;
+                p->inodes[inode_dir_pai].tamanho -= sizeof(entrada_diretorio);
+                p->inodes[inode_dir_pai].data_modificacao = time(NULL);
+                printf("Diretório '%s' removido com sucesso.\n", nome);
+                return 0;
+            }
         }
     }
 

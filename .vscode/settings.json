@@ -2,6 +2,7 @@
     "files.associations": {
         "menu.h": "c",
         "particao.h": "c",
-        "funcoes.h": "c"
+        "funcoes.h": "c",
+        "arquivo.h": "c"
     }
 }

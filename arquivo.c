@@ -35,6 +35,11 @@ int criarArquivo(particao *p, const char *nome, int inode_pai) {
     p->inodes[inode_novo].data_modificacao = time(NULL);
     p->inodes[inode_novo].data_acesso = time(NULL);
 
+    // CORREÇÃO: Inicializar todos os ponteiros diretos como -1 (não alocados)
+    for (int i = 0; i < NUM_PONTEIROS_DIRETOS; i++) {
+        p->inodes[inode_novo].blocos_diretos[i] = -1;
+    }
+
     // Marcar i-node como usado
     p->bitmapInodes[inode_novo] = 1;
 
@@ -52,6 +57,12 @@ int criarArquivo(particao *p, const char *nome, int inode_pai) {
 
 // Função para escrever dados em um arquivo
 int escreverArquivo(particao *p, int inode_arquivo, const char *dados, int tamanho) {
+    if (inode_arquivo < 0 || inode_arquivo >= p->numInodes || 
+        p->bitmapInodes[inode_arquivo] == 0) {
+        printf("Erro: I-node %d inválido.\n", inode_arquivo);
+        return -1;
+    }
+
     if (p->inodes[inode_arquivo].tipo != 0) {
         printf("Erro: I-node %d não é um arquivo.\n", inode_arquivo);
         return -1;
@@ -70,15 +81,25 @@ int escreverArquivo(particao *p, int inode_arquivo, const char *dados, int taman
         return -1;
     }
 
-    // Liberar blocos antigos se o arquivo já tinha dados
-    for (int i = 0; i < NUM_PONTEIROS_DIRETOS; i++) {
+    // CORREÇÃO: Liberar apenas os blocos que estavam sendo usados anteriormente
+    int blocos_antigos_usados = 0;
+    if (p->inodes[inode_arquivo].tamanho > 0) {
+        blocos_antigos_usados = (p->inodes[inode_arquivo].tamanho + p->tamanhoBloco - 1) / p->tamanhoBloco;
+    }
+
+    for (int i = 0; i < blocos_antigos_usados; i++) {
         if (p->inodes[inode_arquivo].blocos_diretos[i] != -1) {
             p->bitmap[p->inodes[inode_arquivo].blocos_diretos[i]] = 0;
             p->inodes[inode_arquivo].blocos_diretos[i] = -1;
         }
     }
 
-    // Alocar novos blocos
+    // CORREÇÃO: Garantir que blocos não utilizados permaneçam como -1
+    for (int i = blocos_antigos_usados; i < NUM_PONTEIROS_DIRETOS; i++) {
+        p->inodes[inode_arquivo].blocos_diretos[i] = -1;
+    }
+
+    // Alocar apenas os blocos necessários
     int blocos_alocados = 0;
     for (int i = 0; i < blocos_necessarios; i++) {
         int bloco = encontrarBlocoLivre(p);
@@ -96,6 +117,11 @@ int escreverArquivo(particao *p, int inode_arquivo, const char *dados, int taman
         blocos_alocados++;
     }
 
+    // CORREÇÃO: Garantir que os ponteiros não utilizados permaneçam como -1
+    for (int i = blocos_necessarios; i < NUM_PONTEIROS_DIRETOS; i++) {
+        p->inodes[inode_arquivo].blocos_diretos[i] = -1;
+    }
+
     // Escrever dados nos blocos
     int bytes_escritos = 0;
     for (int i = 0; i < blocos_necessarios; i++) {
@@ -103,6 +129,8 @@ int escreverArquivo(particao *p, int inode_arquivo, const char *dados, int taman
         int bytes_para_escrever = (tamanho - bytes_escritos > p->tamanhoBloco) ? 
                                   p->tamanhoBloco : tamanho - bytes_escritos;
         
+        // CORREÇÃO: Limpar o bloco antes de escrever para evitar lixo
+        memset(p->blocos[bloco], 0, p->tamanhoBloco);
         memcpy(p->blocos[bloco], dados + bytes_escritos, bytes_para_escrever);
         bytes_escritos += bytes_para_escrever;
     }
@@ -118,6 +146,12 @@ int escreverArquivo(particao *p, int inode_arquivo, const char *dados, int taman
 
 // Função para importar conteúdo de um arquivo real do sistema
 int importarArquivo(particao *p, int inode_arquivo, const char *caminho_arquivo_real) {
+    if (inode_arquivo < 0 || inode_arquivo >= p->numInodes || 
+        p->bitmapInodes[inode_arquivo] == 0) {
+        printf("Erro: I-node %d inválido.\n", inode_arquivo);
+        return -1;
+    }
+
     FILE *arquivo_real = fopen(caminho_arquivo_real, "rb");
     if (!arquivo_real) {
         printf("Erro: Não foi possível abrir o arquivo '%s'.\n", caminho_arquivo_real);
@@ -174,6 +208,12 @@ int importarArquivo(particao *p, int inode_arquivo, const char *caminho_arquivo_
 
 // Função para listar conteúdo de um arquivo
 void listarConteudoArquivo(particao *p, int inode_arquivo) {
+    if (inode_arquivo < 0 || inode_arquivo >= p->numInodes || 
+        p->bitmapInodes[inode_arquivo] == 0) {
+        printf("Erro: I-node %d inválido.\n", inode_arquivo);
+        return;
+    }
+
     if (p->inodes[inode_arquivo].tipo != 0) {
         printf("Erro: I-node %d não é um arquivo.\n", inode_arquivo);
         return;
@@ -190,10 +230,16 @@ void listarConteudoArquivo(particao *p, int inode_arquivo) {
     printf("Conteúdo:\n");
     printf("----------------------------------------\n");
 
+    // CORREÇÃO: Calcular quantos blocos estão realmente sendo usados
+    int blocos_usados = (tamanho + p->tamanhoBloco - 1) / p->tamanhoBloco;
     int bytes_lidos = 0;
-    for (int i = 0; i < NUM_PONTEIROS_DIRETOS && bytes_lidos < tamanho; i++) {
+    
+    for (int i = 0; i < blocos_usados && bytes_lidos < tamanho; i++) {
         int bloco = p->inodes[inode_arquivo].blocos_diretos[i];
-        if (bloco == -1) break;
+        if (bloco == -1) {
+            printf("Erro: Bloco %d não está alocado mas deveria estar.\n", i);
+            break;
+        }
 
         int bytes_para_ler = (tamanho - bytes_lidos > p->tamanhoBloco) ? 
                             p->tamanhoBloco : tamanho - bytes_lidos;
@@ -201,7 +247,6 @@ void listarConteudoArquivo(particao *p, int inode_arquivo) {
         // Imprimir dados do bloco (tratando como texto)
         for (int j = 0; j < bytes_para_ler; j++) {
             char c = p->blocos[bloco][j];
-            if (c == '\0') break;
             printf("%c", c);
         }
         bytes_lidos += bytes_para_ler;
@@ -265,22 +310,24 @@ int moverArquivo(particao *p, int inode_dir_origem, const char *nome_arquivo, in
     }
 
     // Remover entrada do diretório origem
-    int bloco_origem = p->inodes[inode_dir_origem].blocos_diretos[0];
-    entrada_diretorio *entradas_origem = (entrada_diretorio *)p->blocos[bloco_origem];
-    int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco_origem = p->inodes[inode_dir_origem].blocos_diretos[b];
+        if (bloco_origem == -1) continue;
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas_origem[i].valida && strcmp(entradas_origem[i].nome, nome_arquivo) == 0) {
-            entradas_origem[i].valida = 0;
-            p->inodes[inode_dir_origem].tamanho -= sizeof(entrada_diretorio);
-            p->inodes[inode_dir_origem].data_modificacao = time(NULL);
-            printf("Arquivo '%s' movido com sucesso.\n", nome_arquivo);
-            return 0;
+        entrada_diretorio *entradas_origem = (entrada_diretorio *)p->blocos[bloco_origem];
+        int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas_origem[i].valida && strcmp(entradas_origem[i].nome, nome_arquivo) == 0) {
+                entradas_origem[i].valida = 0;
+                p->inodes[inode_dir_origem].tamanho -= sizeof(entrada_diretorio);
+                p->inodes[inode_dir_origem].data_modificacao = time(NULL);
+                printf("Arquivo '%s' movido com sucesso.\n", nome_arquivo);
+                return 0;
+            }
         }
     }
-
-    printf("Erro: Falha ao remover entrada do diretório origem.\n");
-    return -1;
+    return -1; // Não encontrado no diretório origem
 }
 
 // Função para apagar arquivo
@@ -298,12 +345,21 @@ int apagarArquivo(particao *p, int inode_dir, const char *nome_arquivo) {
         return -1;
     }
 
-    // Liberar todos os blocos do arquivo
-    for (int i = 0; i < NUM_PONTEIROS_DIRETOS; i++) {
+    // CORREÇÃO: Liberar apenas os blocos que estavam sendo usados
+    int blocos_usados = 0;
+    if (p->inodes[inode_arquivo].tamanho > 0) {
+        blocos_usados = (p->inodes[inode_arquivo].tamanho + p->tamanhoBloco - 1) / p->tamanhoBloco;
+    }
+
+    for (int i = 0; i < blocos_usados; i++) {
         if (p->inodes[inode_arquivo].blocos_diretos[i] != -1) {
             p->bitmap[p->inodes[inode_arquivo].blocos_diretos[i]] = 0;
-            p->inodes[inode_arquivo].blocos_diretos[i] = -1;
         }
+    }
+
+    // CORREÇÃO: Inicializar todos os ponteiros como -1
+    for (int i = 0; i < NUM_PONTEIROS_DIRETOS; i++) {
+        p->inodes[inode_arquivo].blocos_diretos[i] = -1;
     }
 
     // Marcar i-node como livre
@@ -312,19 +368,24 @@ int apagarArquivo(particao *p, int inode_dir, const char *nome_arquivo) {
     p->inodes[inode_arquivo].tamanho = 0;
 
     // Remover entrada do diretório
-    int bloco_dir = p->inodes[inode_dir].blocos_diretos[0];
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco_dir];
-    int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco_dir = p->inodes[inode_dir].blocos_diretos[b];
+        if (bloco_dir == -1) continue;
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida && strcmp(entradas[i].nome, nome_arquivo) == 0) {
-            entradas[i].valida = 0;
-            p->inodes[inode_dir].tamanho -= sizeof(entrada_diretorio);
-            p->inodes[inode_dir].data_modificacao = time(NULL);
-            printf("Arquivo '%s' apagado com sucesso.\n", nome_arquivo);
-            return 0;
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco_dir];
+        int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas[i].valida && strcmp(entradas[i].nome, nome_arquivo) == 0) {
+                entradas[i].valida = 0;
+                p->inodes[inode_dir].tamanho -= sizeof(entrada_diretorio);
+                p->inodes[inode_dir].data_modificacao = time(NULL);
+                printf("Arquivo '%s' apagado com sucesso.\n", nome_arquivo);
+                return 0;
+            }
         }
     }
+
 
     printf("Erro: Falha ao remover entrada do diretório.\n");
     return -1;
@@ -363,6 +424,12 @@ int buscarArquivoRecursivo(particao *p, int inode_dir, const char *nome_arquivo)
 
 // Função para exibir informações detalhadas de um arquivo
 void informacoesArquivo(particao *p, int inode_arquivo) {
+    if (inode_arquivo < 0 || inode_arquivo >= p->numInodes || 
+        p->bitmapInodes[inode_arquivo] == 0) {
+        printf("Erro: I-node %d inválido.\n", inode_arquivo);
+        return;
+    }
+
     if (p->inodes[inode_arquivo].tipo != 0) {
         printf("Erro: I-node %d não é um arquivo.\n", inode_arquivo);
         return;
@@ -377,15 +444,18 @@ void informacoesArquivo(particao *p, int inode_arquivo) {
     printf("Última modificação: %s", ctime(&arquivo->data_modificacao));
     printf("Último acesso: %s", ctime(&arquivo->data_acesso));
     
-    printf("Blocos utilizados: ");
+    // CORREÇÃO: Mostrar apenas os blocos que estão realmente sendo usados
     int blocos_usados = 0;
-    for (int i = 0; i < NUM_PONTEIROS_DIRETOS; i++) {
+    if (arquivo->tamanho > 0) {
+        blocos_usados = (arquivo->tamanho + p->tamanhoBloco - 1) / p->tamanhoBloco;
+    }
+    
+    printf("Blocos utilizados: ");
+    for (int i = 0; i < blocos_usados; i++) {
         if (arquivo->blocos_diretos[i] != -1) {
             printf("%d ", arquivo->blocos_diretos[i]);
-            blocos_usados++;
         }
     }
     printf("\nNúmero de blocos: %d\n", blocos_usados);
     printf("==============================\n");
 }
-

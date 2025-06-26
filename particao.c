@@ -20,6 +20,57 @@ int encontrarBlocoLivre(particao *p) {
     return -1; // Nenhum bloco livre
 }
 
+// Função auxiliar para encontrar bloco com espaço livre ou alocar novo bloco
+int encontrarOuAlocarBloco(particao *p, int inode_num, int tipo_conteudo) {
+    // Percorrer blocos diretos existentes em busca de espaço livre
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco = p->inodes[inode_num].blocos_diretos[b];
+        
+        if (bloco != -1) {
+            // Verificar se há espaço livre no bloco existente
+            if (tipo_conteudo == 1) { // Diretório
+                entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+                int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+                
+                for (int i = 0; i < max_entradas; i++) {
+                    if (!entradas[i].valida) {
+                        return bloco; // Encontrou espaço livre
+                    }
+                }
+            } else { // Arquivo - verificar se há espaço no bloco
+                // Para arquivos, verificar se o bloco tem espaço baseado no tamanho
+                int bytes_usados = p->inodes[inode_num].tamanho % p->tamanhoBloco;
+                if (bytes_usados > 0 && bytes_usados < p->tamanhoBloco) {
+                    return bloco; // Há espaço no último bloco
+                }
+            }
+        } else {
+            // Slot de bloco vazio - tentar alocar novo bloco
+            for (int i = 0; i < p->numBlocos; i++) {
+                if (p->bitmap[i] == 0) { // Bloco livre
+                    p->bitmap[i] = 1;    // Marcar como ocupado
+                    p->inodes[inode_num].blocos_diretos[b] = i;
+                    
+                    // Inicializar o bloco baseado no tipo
+                    if (tipo_conteudo == 1) { // Diretório
+                        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[i];
+                        int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+                        for (int j = 0; j < max_entradas; j++) {
+                            entradas[j].valida = 0;
+                        }
+                    } else { // Arquivo
+                        memset(p->blocos[i], 0, p->tamanhoBloco);
+                    }
+                    
+                    return i; // Retorna o novo bloco alocado
+                }
+            }
+        }
+    }
+    
+    return -1; // Não há mais blocos disponíveis
+}
+
 // Função para criar o diretório raiz
 int criarDiretorioRaiz(particao *p) {
     int bloco = encontrarBlocoLivre(p);
@@ -164,37 +215,39 @@ void listarDiretorio(particao *p, int inode_dir) {
     printf("%-20s %-8s %-12s %-20s\n", "Nome", "Tipo", "Tamanho", "Última Modificação");
     printf("------------------------------------------------------------\n");
 
-    int bloco = p->inodes[inode_dir].blocos_diretos[0];
-    if (bloco == -1) {
-        printf("Diretório vazio.\n");
-        return;
-    }
+   int encontrou = 0;
 
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
-    int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco = p->inodes[inode_dir].blocos_diretos[b];
+        if (bloco == -1) continue;
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida) {
-            int inode_num = entradas[i].numero_inode;
-            char tipo_str[10];
-            strcpy(tipo_str, (p->inodes[inode_num].tipo == 1) ? "DIR" : "FILE");
-            
-            char *time_str = ctime(&p->inodes[inode_num].data_modificacao);
-            if (time_str) {
-                time_str[strlen(time_str) - 1] = '\0'; // Remove newline
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+        int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+
+        for (int i = 0; i < max_entradas; i++) {
+            if (entradas[i].valida) {
+                encontrou = 1;
+                int inode_num = entradas[i].numero_inode;
+                char tipo_str[10];
+                strcpy(tipo_str, (p->inodes[inode_num].tipo == 1) ? "DIR" : "FILE");
+
+                char *time_str = ctime(&p->inodes[inode_num].data_modificacao);
+                if (time_str) time_str[strlen(time_str) - 1] = '\0'; // Remove newline
+
+                printf("%-20s %-8s %-12d %-20s\n", 
+                    entradas[i].nome, 
+                    tipo_str,
+                    p->inodes[inode_num].tamanho,
+                    time_str ? time_str : "N/A");
             }
-            
-            printf("%-20s %-8s %-12d %-20s\n", 
-                   entradas[i].nome, 
-                   tipo_str,
-                   p->inodes[inode_num].tamanho,
-                   time_str ? time_str : "N/A");
         }
     }
-    
-    // Atualizar tempo de acesso
-    p->inodes[inode_dir].data_acesso = time(NULL);
+
+    if (!encontrou) {
+        printf("Diretório vazio.\n");
+    }
 }
+
 
 // Função para mostrar estatísticas da partição
 void mostrarEstatisticas(particao *p) {
