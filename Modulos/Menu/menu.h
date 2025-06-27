@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "caminho.h"  
-#include "globais.h"
+#include "../Outros/caminho.h"  
+#include "../Outros/globais.h"
 
 
 

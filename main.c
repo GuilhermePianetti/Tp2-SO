@@ -3,10 +3,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "particao.h"
-#include "diretorio.h"
-#include "arquivo.h"
-#include "menu.h"
+#include "./Modulos/Particao/particao.h"
+#include "./Modulos/Diretorio/diretorio.h"
+#include "./Modulos/Arquivo/arquivo.h"
+#include "./Modulos/Menu/menu.h"
 
 
 

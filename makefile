@@ -1,21 +1,22 @@
-# Compilador e flags
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -I./Modulos/Arquivo -I./Modulos/Diretorio -I./Modulos/Menu -I./Modulos/Outros -I./Modulos/Particao
 
-# Arquivos-fonte e cabeçalhos
-SRCS = main.c menu.c diretorio.c arquivo.c particao.c modoAutomatico.c caminho.c
-OBJS = $(SRCS:.c=.o)
+SRC = main.c \
+      Modulos/Arquivo/arquivo.c \
+      Modulos/Diretorio/diretorio.c \
+      Modulos/Menu/menu.c \
+      Modulos/Menu/modoAutomatico.c \
+      Modulos/Outros/caminho.c \
+      Modulos/Particao/particao.c
 
-# Nome do executável
-EXEC = sistema_arquivos
 
-# Regra padrão
+OBJ = $(SRC:.c=.o)
+EXEC = programa
+
 all: $(EXEC)
 
-# Como compilar o executável
-$(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+$(EXEC): $(OBJ)
+	$(CC) $(OBJ) -o $(EXEC)
 
-# Regra para limpar os arquivos objetos e o executável
 clean:
-	rm -f $(OBJS) $(EXEC)
+	rm -f $(OBJ) $(EXEC)

@@ -6,11 +6,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-#include "particao.h"
-#include "diretorio.h"
-#include "arquivo.h"
-#include "modoAutomatico.h"
+#include "../Particao/particao.h"
+#include "../Diretorio/diretorio.h"
+#include "../Arquivo/arquivo.h"
+#include "../Menu/modoAutomatico.h"
 #include "globais.h"
 
 typedef struct {

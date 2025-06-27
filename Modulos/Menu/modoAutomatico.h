@@ -8,8 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "menu.h"
-#include "caminho.h" 
-#include "globais.h"
+#include "../Outros/caminho.h" 
+#include "../Outros/globais.h"
 
 
 extern char caminho_string[MAX_CAMINHO_STR];

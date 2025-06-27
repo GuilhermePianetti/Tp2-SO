@@ -6,10 +6,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "particao.h"
-#include "diretorio.h"
-#include "arquivo.h"
-#include "menu.h"
+#include "../Particao/particao.h"
+#include "../Diretorio/diretorio.h"
+#include "../Menu/menu.h"
 
 
 
