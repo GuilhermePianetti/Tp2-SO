@@ -8,10 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 #include "menu.h"
+#include "caminho.h" 
+#include "globais.h"
 
-#define MAX_LINHA_COMANDO 512
-#define MAX_ARGS 10
-#define MAX_ARG_LENGTH 256
+
+extern char caminho_string[MAX_CAMINHO_STR];
 
 typedef struct {
     char comando[MAX_ARG_LENGTH];

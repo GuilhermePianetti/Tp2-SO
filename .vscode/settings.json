@@ -3,6 +3,7 @@
         "menu.h": "c",
         "particao.h": "c",
         "funcoes.h": "c",
-        "arquivo.h": "c"
+        "arquivo.h": "c",
+        "globais.h": "c"
     }
 }

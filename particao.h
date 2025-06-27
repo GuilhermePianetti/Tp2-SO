@@ -11,7 +11,7 @@
 
 #define NUM_PONTEIROS_DIRETOS 12
 #define MAX_ENTRADAS_POR_BLOCO 16
-#define MAX_NOME 63  // Reduzido para permitir múltiplas entradas por bloco
+#define MAX_NOME 63 
 
 typedef struct inode {
     int numero;                       // Número do i-node
