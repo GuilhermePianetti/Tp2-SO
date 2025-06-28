@@ -9,11 +9,11 @@ SRC = main.c \
       Modulos/Outros/caminho.c \
       Modulos/Particao/particao.c
 
-
 OBJ = $(SRC:.c=.o)
 EXEC = programa
 
 all: $(EXEC)
+	@./$(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC)
