@@ -1,6 +1,46 @@
 #include "menu.h"
 
-// Definição das variáveis globais (alocação de memória real)
+// Função auxiliar para mostrar informações detalhadas no modo verboso
+void exibirInformacoesVerbosas(const char* operacao) {
+    if (!modo_verboso) return;
+    
+    printf("\n📊 INFORMAÇÕES DETALHADAS - %s\n", operacao);
+    printf("═══════════════════════════════════════════\n");
+    mostrarEstatisticas(&sistema);
+    printf("\n📋 Conteúdo do diretório atual:\n");
+    listarDiretorio(&sistema, diretorio_atual);
+    printf("═══════════════════════════════════════════\n");
+}
+
+// Função auxiliar para mostrar estado dos i-nodes no modo verboso
+void exibirEstadoInodes(const char* contexto) {
+    if (!modo_verboso) return;
+    
+    printf("\n🆔 ESTADO DOS I-NODES - %s\n", contexto);
+    printf("%-6s %-8s %-10s %-20s\n", "I-node", "Tipo", "Tamanho", "Última Modificação");
+    printf("─────────────────────────────────────────────────\n");
+    
+    int inodes_usados = 0;
+    for (int i = 0; i < sistema.numInodes; i++) {
+        if (sistema.bitmapInodes[i] == 1) {
+            inodes_usados++;
+            char tipo_str[10];
+            if (sistema.inodes[i].tipo == 1) strcpy(tipo_str, "DIR");
+            else if (sistema.inodes[i].tipo == 0) strcpy(tipo_str, "FILE");
+            else strcpy(tipo_str, "LIVRE");
+            
+            char *time_str = ctime(&sistema.inodes[i].data_modificacao);
+            if (time_str) time_str[strlen(time_str) - 1] = '\0';
+            
+            printf("%-6d %-8s %-10d %-20s\n", 
+                   i, tipo_str, sistema.inodes[i].tamanho, 
+                   time_str ? time_str : "N/A");
+        }
+    }
+    printf("─────────────────────────────────────────────────\n");
+    printf("Total de i-nodes em uso: %d/%d\n", inodes_usados, sistema.numInodes);
+    printf("═══════════════════════════════════════════════\n");
+}
 
 
 // Função para inicializar o sistema
@@ -99,12 +139,14 @@ void menuDiretorios() {
                 fgets(nome, sizeof(nome), stdin);
                 nome[strcspn(nome, "\n")] = 0; // Remove newline
                 
-                if (modo_verboso) {
-                    printf("⏳ Criando diretório '%s'...\n", nome);
-                }
+                
                 
                 if (criarDiretorio(&sistema, nome, diretorio_atual) != -1) {
                     printf("✅ Diretório criado com sucesso!\n");
+                    if (modo_verboso) {
+                        exibirInformacoesVerbosas("CRIAÇÃO DE DIRETÓRIO");
+                        exibirEstadoInodes("APÓS CRIAÇÃO DE DIRETÓRIO");
+                    }
                 } else {
                     printf("❌ Falha ao criar diretório.\n");
                 }
@@ -127,6 +169,9 @@ void menuDiretorios() {
                 
                 if (renomearEntrada(&sistema, diretorio_atual, nome, nome_novo) == 0) {
                     printf("✅ Diretório renomeado com sucesso!\n");
+                    if (modo_verboso) {
+                        exibirInformacoesVerbosas("RENOMEAÇÃO DE DIRETÓRIO");
+                    }
                 } else {
                     printf("❌ Falha ao renomear diretório.\n");
                 }
@@ -152,6 +197,10 @@ void menuDiretorios() {
                     
                     if (apagarDiretorio(&sistema, diretorio_atual, nome) == 0) {
                         printf("✅ Diretório apagado com sucesso!\n");
+                        if (modo_verboso) {
+                            exibirInformacoesVerbosas("REMOÇÃO DE DIRETÓRIO");
+                            exibirEstadoInodes("APÓS REMOÇÃO DE DIRETÓRIO");
+                        }
                     } else {
                         printf("❌ Falha ao apagar diretório.\n");
                     }
@@ -227,6 +276,10 @@ void menuArquivos() {
                     printf("✅ Arquivo criado com sucesso!\n");
                 } else {
                     printf("❌ Falha ao criar arquivo.\n");
+                    if (modo_verboso) {
+                        exibirEstadoInodes("APÓS CRIAÇÃO DE ARQUIVO");
+                        exibirInformacoesVerbosas("CRIAÇÃO DE ARQUIVO");
+                    }
                 }
                 pausar();
                 break;
@@ -250,6 +303,12 @@ void menuArquivos() {
                     
                     if (importarArquivo(&sistema, inode_arquivo, caminho) == 0) {
                         printf("✅ Arquivo importado com sucesso!\n");
+                        if (modo_verboso) {
+                            printf("\n📄 Informações detalhadas do arquivo importado:\n");
+                            informacoesArquivo(&sistema, inode_arquivo);
+                            exibirEstadoInodes("APÓS IMPORTAÇÃO DE ARQUIVO");
+                            exibirInformacoesVerbosas("IMPORTAÇÃO DE ARQUIVO");
+                        }
                     } else {
                         printf("❌ Falha ao importar conteúdo do arquivo.\n");
                     }
@@ -305,6 +364,9 @@ void menuArquivos() {
                 
                 if (renomearArquivo(&sistema, diretorio_atual, nome, nome_novo) == 0) {
                     printf("✅ Arquivo renomeado com sucesso!\n");
+                    if (modo_verboso) {
+                        exibirInformacoesVerbosas("RENOMEAÇÃO DE ARQUIVO");
+                    }
                 } else {
                     printf("❌ Falha ao renomear arquivo.\n");
                 }
@@ -335,6 +397,10 @@ void menuArquivos() {
                     
                     if (apagarArquivo(&sistema, diretorio_atual, nome) == 0) {
                         printf("✅ Arquivo apagado com sucesso!\n");
+                        if (modo_verboso) {
+                            exibirInformacoesVerbosas("REMOÇÃO DE ARQUIVO");
+                            exibirEstadoInodes("APÓS REMOÇÃO DE ARQUIVO");
+                        }
                     } else {
                         printf("❌ Falha ao apagar arquivo.\n");
                     }
@@ -358,6 +424,10 @@ void menuArquivos() {
                 if (resultado != -1) {
                     printf("✅ Arquivo encontrado (i-node %d)!\n", resultado);
                     informacoesArquivo(&sistema, resultado);
+                    if (modo_verboso) {
+                        printf("\n🔍 Contexto da busca - diretório raiz:\n");
+                        listarDiretorio(&sistema, 0);
+                    }
                 } else {
                     printf("❌ Arquivo não encontrado.\n");
                 }
@@ -407,6 +477,13 @@ void menuConfiguracoes() {
             case 2:
                 modo_verboso = !modo_verboso;
                 printf("✅ Modo verboso %s!\n", modo_verboso ? "ATIVADO" : "DESATIVADO");
+                if (modo_verboso) {
+                    printf("\n🔧 Modo verboso ativado! As próximas operações mostrarão:\n");
+                    printf("   • Estado detalhado dos i-nodes\n");
+                    printf("   • Estatísticas do sistema\n");
+                    printf("   • Conteúdo dos diretórios após modificações\n");
+                    printf("   • Informações detalhadas das operações\n");
+                }
                 pausar();
                 break;
                 

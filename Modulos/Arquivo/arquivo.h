@@ -29,4 +29,4 @@ int apagarArquivo(particao *p, int inode_dir, const char *nome_arquivo);
 int buscarArquivoRecursivo(particao *p, int inode_dir, const char *nome_arquivo);
 void informacoesArquivo(particao *p, int inode_arquivo);
 
-#endif // ARQUIVOS_H
+#endif

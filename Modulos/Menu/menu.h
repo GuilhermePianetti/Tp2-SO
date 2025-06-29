@@ -8,7 +8,9 @@
 #include "../Outros/caminho.h"  
 #include "../Outros/globais.h"
 
-
+//fubcoes auxiliares
+void exibirInformacoesVerbosas(const char* operacao);
+void exibirEstadoInodes(const char* contexto);
 
 // Menus principais
 void menuPrincipal(void);
