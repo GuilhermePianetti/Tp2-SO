@@ -393,6 +393,11 @@ int apagarArquivo(particao *p, int inode_dir, const char *nome_arquivo) {
 
 // Função para buscar arquivo por nome (busca recursiva)
 int buscarArquivoRecursivo(particao *p, int inode_dir, const char *nome_arquivo) {
+    // Validação de parâmetros
+    if (!p || !nome_arquivo || inode_dir < 0 || inode_dir >= p->numInodes) {
+        return -1;
+    }
+    
     if (p->inodes[inode_dir].tipo != 1) {
         return -1; // Não é um diretório
     }
@@ -403,18 +408,41 @@ int buscarArquivoRecursivo(particao *p, int inode_dir, const char *nome_arquivo)
         return resultado; // Encontrou o arquivo
     }
 
-    // Buscar recursivamente em subdiretórios
-    int bloco = p->inodes[inode_dir].blocos_diretos[0];
-    if (bloco == -1) return -1;
-
-    entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+    // Percorrer TODOS os blocos diretos do inode atual
     int max_entradas = p->tamanhoBloco / sizeof(entrada_diretorio);
+    
+    for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
+        int bloco = p->inodes[inode_dir].blocos_diretos[b];
+        
+        // Se o bloco não está alocado, continuar para o próximo
+        if (bloco == -1 || bloco == 0) {
+            continue;
+        }
+        
+        // Validação do índice do bloco
+        if (bloco >= p->numBlocos) {
+            continue;
+        }
 
-    for (int i = 0; i < max_entradas; i++) {
-        if (entradas[i].valida && p->inodes[entradas[i].numero_inode].tipo == 1) {
-            int resultado_recursivo = buscarArquivoRecursivo(p, entradas[i].numero_inode, nome_arquivo);
-            if (resultado_recursivo != -1) {
-                return resultado_recursivo;
+        entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco];
+
+        // Percorrer todas as entradas deste bloco
+        for (int i = 0; i < max_entradas; i++) {
+            if (!entradas[i].valida) {
+                continue;
+            }
+            
+            // Validação do número do inode da entrada
+            if (entradas[i].numero_inode < 0 || entradas[i].numero_inode >= p->numInodes) {
+                continue;
+            }
+            
+            // Se é um diretório, buscar recursivamente
+            if (p->inodes[entradas[i].numero_inode].tipo == 1) {
+                int resultado_recursivo = buscarArquivoRecursivo(p, entradas[i].numero_inode, nome_arquivo);
+                if (resultado_recursivo != -1) {
+                    return resultado_recursivo;
+                }
             }
         }
     }
