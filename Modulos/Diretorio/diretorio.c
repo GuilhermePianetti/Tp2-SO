@@ -183,6 +183,12 @@ int renomearEntrada(particao *p, int inode_dir, const char *nome_antigo, const c
 }
 
 int apagarDiretorio(particao *p, int inode_dir_pai, const char *nome) {
+    // Validação de parâmetros
+    if (!p || !nome || inode_dir_pai < 0) {
+        printf("Erro: Parâmetros inválidos.\n");
+        return -1;
+    }
+
     int inode_alvo = buscarEntradaDiretorio(p, inode_dir_pai, nome);
 
     if (inode_alvo == -1 || p->inodes[inode_alvo].tipo != 1) {
@@ -197,8 +203,14 @@ int apagarDiretorio(particao *p, int inode_dir_pai, const char *nome) {
         int bloco_alvo = p->inodes[inode_alvo].blocos_diretos[b];
         
         // Se o bloco não está alocado, pular para o próximo
-        if (bloco_alvo == -1) {
+        if (bloco_alvo == -1 || bloco_alvo == 0) {
             continue;
+        }
+
+        // Validação de índice do bloco
+        if (bloco_alvo >= p->numBlocos) {
+            printf("Erro: Índice de bloco inválido (%d).\n", bloco_alvo);
+            return -1;
         }
 
         entrada_diretorio *entradas = (entrada_diretorio *)p->blocos[bloco_alvo];
@@ -216,23 +228,31 @@ int apagarDiretorio(particao *p, int inode_dir_pai, const char *nome) {
     for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
         int bloco_alvo = p->inodes[inode_alvo].blocos_diretos[b];
         
-        if (bloco_alvo != -1) {
+        if (bloco_alvo != -1 && bloco_alvo != 0 && bloco_alvo < p->numBlocos) {
             p->bitmap[bloco_alvo] = 0; // Marcar bloco como livre
-            p->inodes[inode_alvo].blocos_diretos[b] = 0; // Limpar referência
+            p->inodes[inode_alvo].blocos_diretos[b] = -1; // CORREÇÃO: usar -1 em vez de 0
         }
     }
 
     // Marcar i-node como livre
     p->bitmapInodes[inode_alvo] = 0;
     p->inodes[inode_alvo].tipo = -1;
+    p->inodes[inode_alvo].tamanho = 0;
 
     // Remover entrada do diretório pai (percorrer todos os blocos do pai)
     for (int b = 0; b < NUM_PONTEIROS_DIRETOS; b++) {
         int bloco_pai = p->inodes[inode_dir_pai].blocos_diretos[b];
         
-        // Se o bloco não está alocado, pular para o próximo
-        if (bloco_pai == 0) {
+        // CORREÇÃO: Verificar tanto -1 quanto 0, mas para diretório raiz (inode 0)
+        // o bloco pode ser válido mesmo sendo 0
+        if (bloco_pai == -1 || (inode_dir_pai != 0 && bloco_pai == 0)) {
             continue;
+        }
+
+        // Validação de índice do bloco pai
+        if (bloco_pai >= p->numBlocos) {
+            printf("Erro: Índice de bloco pai inválido (%d).\n", bloco_pai);
+            return -1;
         }
 
         entrada_diretorio *entradas_pai = (entrada_diretorio *)p->blocos[bloco_pai];
@@ -241,6 +261,10 @@ int apagarDiretorio(particao *p, int inode_dir_pai, const char *nome) {
         for (int i = 0; i < max_entradas; i++) {
             if (entradas_pai[i].valida && strcmp(entradas_pai[i].nome, nome) == 0) {
                 entradas_pai[i].valida = 0;
+                // Limpar o nome para segurança
+                memset(entradas_pai[i].nome, 0, sizeof(entradas_pai[i].nome));
+                entradas_pai[i].numero_inode = -1;
+                
                 p->inodes[inode_dir_pai].tamanho -= sizeof(entrada_diretorio);
                 p->inodes[inode_dir_pai].data_modificacao = time(NULL);
                 printf("Diretório '%s' removido com sucesso.\n", nome);
