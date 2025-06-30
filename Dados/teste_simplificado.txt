@@ -1,0 +1,73 @@
+# Teste Simplificado do Sistema de Arquivos
+# Execute: ./seu_programa < teste_simples.txt
+
+echo "=== TESTE BÁSICO DO SISTEMA DE ARQUIVOS ==="
+
+# Verificar estado inicial
+info
+listar
+
+# Criar estrutura básica
+echo "Criando diretórios..."
+criar_dir docs
+criar_dir temp
+
+# Criar alguns arquivos
+echo "Criando arquivos..."
+criar_arquivo readme.txt
+criar_arquivo config.cfg
+
+# Importar arquivo real
+echo "Importando arquivo real..."
+importar dados.txt ./Dados/teste.txt
+
+# Verificar resultado
+listar
+
+# Testar navegação
+echo "Testando navegação..."
+navegar docs
+criar_arquivo documento.doc
+listar
+navegar ..
+
+# Testar renomear
+echo "Testando renomear..."
+renomear readme.txt leiame.txt
+listar
+
+# Testar mover
+echo "Testando mover arquivo..."
+mover leiame.txt /docs
+navegar docs
+listar
+navegar ..
+
+# Testar apagar arquivo
+echo "Testando apagar arquivo..."
+apagar config.cfg
+listar
+
+# Testar apagar diretório vazio
+echo "Testando apagar diretório vazio..."
+apagar temp
+listar
+
+# Tentar apagar diretório não vazio (deve falhar)
+echo "Tentando apagar diretório não vazio..."
+apagar docs
+
+# Limpar para poder apagar
+echo "Limpando diretório..."
+navegar docs
+apagar documento.doc
+apagar leiame.txt
+navegar ..
+apagar docs
+
+# Estado final
+echo "Estado final:"
+listar
+info
+
+echo "=== TESTE CONCLUÍDO ==="
